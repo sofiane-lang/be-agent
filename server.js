@@ -19,7 +19,7 @@ const { startCronJobs }        = require('./src/cron');
 const logger                   = require('./src/logger');
 
 const app  = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 8080;
 
 // Parse le JSON entrant (webhooks Meta)
 app.use(express.json());
