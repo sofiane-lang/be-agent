@@ -71,7 +71,7 @@ async function initSheets() {
 async function appendConversation({ phone, name, incoming, reply, status = 'traité' }) {
   const sheets = await initSheets();
   const sheetId = process.env.GOOGLE_SHEET_ID;
-  const tab    = process.env.GOOGLE_SHEET_TAB || 'Conversations';
+  const tab    = process.env.GOOGLE_SHEET_TAB || 'SUIVI DES APPELS';
 
   const now  = new Date();
   const date = now.toLocaleDateString('fr-FR');
@@ -100,7 +100,7 @@ async function appendConversation({ phone, name, incoming, reply, status = 'trai
 async function getConversationHistory(phone, limit = 10) {
   const sheets = await initSheets();
   const sheetId = process.env.GOOGLE_SHEET_ID;
-  const tab    = process.env.GOOGLE_SHEET_TAB || 'Conversations';
+  const tab    = process.env.GOOGLE_SHEET_TAB || 'SUIVI DES APPELS';
 
   const response = await sheets.spreadsheets.values.get({
     spreadsheetId: sheetId,
@@ -127,7 +127,7 @@ async function getConversationHistory(phone, limit = 10) {
 async function getDailyStats() {
   const sheets = await initSheets();
   const sheetId = process.env.GOOGLE_SHEET_ID;
-  const tab    = process.env.GOOGLE_SHEET_TAB || 'Conversations';
+  const tab    = process.env.GOOGLE_SHEET_TAB || 'SUIVI DES APPELS';
 
   const response = await sheets.spreadsheets.values.get({
     spreadsheetId: sheetId,

@@ -20,8 +20,11 @@ function getApiUrl() {
 
 // Headers d'authentification communs
 function getHeaders() {
+  // Nettoie le token au cas où le nom de la variable serait inclus par erreur
+  let token = (process.env.WHATSAPP_TOKEN || '').trim();
+  if (token.startsWith('WHATSAPP_TOKEN=')) token = token.slice('WHATSAPP_TOKEN='.length);
   return {
-    Authorization: `Bearer ${process.env.WHATSAPP_TOKEN}`,
+    Authorization: `Bearer ${token}`,
     'Content-Type': 'application/json',
   };
 }
