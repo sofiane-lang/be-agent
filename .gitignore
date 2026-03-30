@@ -1,0 +1,20 @@
+# Dépendances
+node_modules/
+
+# Variables d'environnement (NE JAMAIS committer)
+.env
+
+# Credentials Google (NE JAMAIS committer)
+credentials/
+
+# Logs
+logs/
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
