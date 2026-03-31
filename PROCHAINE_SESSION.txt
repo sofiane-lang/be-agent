@@ -1,0 +1,193 @@
+================================================================
+BRIEF PROCHAINE SESSION — Agent IA WhatsApp BE
+À lire en entier au démarrage de la nouvelle conversation
+================================================================
+
+Projet : be-agent
+Repo   : https://github.com/sofiane-lang/be-agent
+Dossier local : C:\Users\Admin\Desktop\be-agent
+Hébergement : Railway (déploiement auto sur push main)
+Fichier mémoire projet : CLAUDE.md (à la racine — lire en premier)
+
+================================================================
+ÉTAT ACTUEL DU PROJET — ce qui est en place et fonctionne
+================================================================
+
+✅ Bot WhatsApp opérationnel sur Railway
+✅ Prompt v10.4 actif dans src/claude.js
+✅ Google Sheets comme mémoire de conversation
+✅ Rapport quotidien cron à 8h sur WhatsApp admin
+✅ Gestion des types non-texte (audio, image → message d'erreur)
+✅ STOP → silence total
+✅ Calendly intégré pour demandes d'appel
+✅ Détection profil psychologique (5 profils)
+✅ Anti-boucle 1 mot (3 msgs sans avancement → Skool)
+
+================================================================
+CHANTIER 1 — TRANSCRIPTION AUDIO (PRIORITÉ)
+================================================================
+
+OBJECTIF :
+Quand un prospect envoie un message vocal WhatsApp,
+le bot doit le transcrire via Groq Whisper puis traiter
+le texte comme un message normal.
+
+CONTEXTE TECHNIQUE :
+- Actuellement dans messageHandler.js : les messages non-texte
+  reçoivent un message d'erreur générique ("je ne traite que le texte")
+- WhatsApp envoie les audios avec type: "audio" et un media_id
+- Il faut : 1) télécharger le fichier audio via l'API Meta
+            2) envoyer à Groq Whisper pour transcription
+            3) traiter le texte transcrit comme un message normal
+
+API GROQ :
+- Site : https://console.groq.com
+- Modèle Whisper : whisper-large-v3 (le meilleur) ou whisper-large-v3-turbo
+- Gratuit avec limites généreuses
+- SDK : npm install groq-sdk
+- Doc : https://console.groq.com/docs/speech-text
+
+ÉTAPES D'IMPLÉMENTATION :
+1. Créer un compte Groq sur console.groq.com → récupérer la clé API
+2. Ajouter GROQ_API_KEY dans .env et dans Railway
+3. Créer src/transcription.js :
+   - downloadAudioFromMeta(mediaId) → télécharge le fichier audio
+   - transcribeWithGroq(audioBuffer) → retourne le texte
+4. Modifier src/messageHandler.js :
+   - Si type === 'audio' → transcribeWithGroq() → traiter comme texte
+   - Loguer "[vocal transcrit]" dans Google Sheets
+5. Modifier src/whatsapp.js :
+   - Ajouter getMediaUrl(mediaId) pour récupérer l'URL de téléchargement
+   - Ajouter downloadMedia(mediaUrl) pour télécharger le fichier
+
+VARIABLE À AJOUTER dans .env :
+GROQ_API_KEY=           ← clé récupérée sur console.groq.com
+
+================================================================
+CHANTIER 2 — PASSAGE TEST → PRODUCTION META
+================================================================
+
+OBJECTIF :
+Passer le numéro WhatsApp Business du mode test au mode production
+pour pouvoir contacter n'importe quel numéro (pas seulement ceux
+ajoutés manuellement dans Meta Developers).
+
+CE QUI CHANGE :
+- En test : seuls les numéros whitelistés dans Meta Developers reçoivent
+- En prod : tous les numéros peuvent recevoir des messages
+- Il faut soumettre l'application Meta pour review
+
+ÉTAPES :
+1. Meta Developers → App → WhatsApp → Configuration
+2. Ajouter un numéro de téléphone réel vérifié (si pas encore fait)
+3. Compléter les infos de l'app (politique de confidentialité, icône, etc.)
+4. Soumettre pour review Meta (délai : 1-7 jours en général)
+5. Une fois approuvé : déplacer le webhook vers le domaine Railway prod
+6. Vérifier que VERIFY_TOKEN correspond entre Meta et Railway
+
+POINTS DE VIGILANCE :
+- Le message template "Bonjour, je suis Angélique..." doit être
+  soumis et approuvé par Meta séparément (Business-Initiated messages)
+- Les messages réactifs (réponse à un message reçu) n'ont pas besoin
+  d'approbation — ils fonctionnent en prod dès l'app approuvée
+- URL Railway actuelle à confirmer pour le webhook prod
+
+================================================================
+CHANTIER 3 — FICHIER DE LEADS
+================================================================
+
+OBJECTIF :
+Permettre d'envoyer automatiquement le MSG 1 (premier contact)
+à une liste de prospects depuis un fichier de leads,
+sans avoir à envoyer manuellement chaque message.
+
+FORMAT ATTENDU DU FICHIER :
+CSV ou Google Sheet avec colonnes :
+| Prénom | Numéro (format international sans +) | Statut |
+
+FONCTIONNEMENT ATTENDU :
+1. Script ou endpoint qui lit la liste
+2. Pour chaque lead avec statut "à contacter" :
+   - Envoie le MSG 1 personnalisé avec le prénom
+   - Marque le statut "envoyé" dans le fichier
+   - Délai entre chaque envoi (éviter le spam Meta)
+3. Les réponses sont traitées normalement par le webhook existant
+
+FICHIERS À CRÉER OU MODIFIER :
+- src/leads.js → nouveau fichier : lecture fichier leads + envoi MSG 1
+- Ou une nouvelle route dans server.js : POST /launch-campaign
+- Ou un script standalone : scripts/sendLeads.js
+
+QUESTION EN SUSPENS :
+Format du fichier leads → CSV local, Google Sheet ou autre ?
+À clarifier au début de la session.
+
+================================================================
+CHANTIER 4 — TESTS DE PROMPT (en cours)
+================================================================
+
+Prompt actuel : v10.4 dans src/claude.js
+Dernières corrections appliquées :
+- Questions concrètes et actionnables (pas abstraites)
+- Variation des réformulations obligatoire (10 options)
+- Détection profil psychologique (5 profils)
+- Anti-boucle 1 mot (max 3 msgs → Skool)
+- Prénom : 1 fois max dans la conversation
+- Plus jamais "formation" → toujours "approche"
+
+Points encore à valider par les tests :
+- Vérifier que la détection de profil fonctionne bien en conditions réelles
+- Vérifier que le bot ne boucle plus sur les réponses courtes
+- Vérifier la transition Skool (naturelle, pas forcée)
+- Vérifier le cas "Yo" / "Salut" → pas de restart séquence
+
+================================================================
+FICHIERS CLÉS À CONNAÎTRE
+================================================================
+
+src/claude.js          → PROMPT SYSTÈME (v10.4) + appel Anthropic
+src/messageHandler.js  → orchestration : Sheets → Claude → WhatsApp
+src/whatsapp.js        → client Meta API
+src/sheets.js          → Google Sheets (historique + stats)
+src/cron.js            → rapport quotidien
+server.js              → point d'entrée Express + routes webhook
+
+================================================================
+VARIABLES D'ENVIRONNEMENT (toutes dans Railway)
+================================================================
+
+ANTHROPIC_API_KEY       ✅ en place
+WHATSAPP_TOKEN          ✅ en place
+PHONE_NUMBER_ID         ✅ en place
+VERIFY_TOKEN            ✅ en place
+GOOGLE_SHEET_ID         ✅ en place
+GOOGLE_SHEET_TAB        ✅ en place
+GOOGLE_SERVICE_ACCOUNT_JSON ✅ en place
+ADMIN_WHATSAPP_NUMBER   ✅ en place
+CRON_DAILY_REPORT       ✅ en place
+CLAUDE_MODEL            ✅ en place
+GROQ_API_KEY            ❌ À AJOUTER (transcription audio)
+
+================================================================
+ORDRE DE PRIORITÉ RECOMMANDÉ
+================================================================
+
+1. Transcription audio Groq Whisper (impact immédiat sur UX)
+2. Tests de prompt (affinage continu)
+3. Passage prod Meta (nécessaire pour déploiement réel)
+4. Fichier de leads (automatisation prospection)
+
+================================================================
+COMMANDE DE DÉMARRAGE SESSION
+================================================================
+
+Ouvre Claude Code dans :
+C:\Users\Admin\Desktop\be-agent
+
+Puis dis à Claude :
+"Lis CLAUDE.md et PROCHAINE_SESSION.txt pour reprendre le contexte,
+on commence par [chantier choisi]."
+
+================================================================
+FIN DU BRIEF
+================================================================
