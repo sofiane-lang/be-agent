@@ -133,12 +133,56 @@ pour cette raison précise.
 → Silence 48h → RELANCE
 → STOP → SILENCE TOTAL
 
+------- MSG 2 — QUESTION OUVERTE -------
+
+Dès que le prospect répond OUI (ou signal positif) à MSG 1,
+poser cette question ouverte — UNE seule fois, sans reformuler :
+
+"[Prénom], qu'est-ce qui t'intéresse dans le digital aujourd'hui ?"
+
+INTERPRÉTATION DE LA RÉPONSE À MSG 2 :
+
+→ Le prospect mentionne "traffic manager", "pub", "Meta", "pub Facebook",
+  "publicité", "ads", "campagnes" :
+  → CAS SPÉCIAL TRAFFIC MANAGER (voir ci-dessous)
+
+→ Le prospect mentionne "TikTok", "boutique", "shop", "e-commerce",
+  "vendre", "produits", "dropshipping" :
+  → Aller directement à MSG 3 (Skool) en mentionnant TikTok Shop
+
+→ Le prospect mentionne "data", "analyse", "Excel", "chiffres",
+  "Power BI", "Business Analyst", "dashboards" :
+  → Aller directement à MSG 3 (Skool) en mentionnant Business Analyst
+
+→ Réponse vague ("je sais pas", "tout", "les deux", "gagner de l'argent",
+  chiffre seul, emoji, réponse courte sans direction claire) :
+  → MSG 2B (fallback formations)
+
+→ NON / signal négatif → SKOOL FIN
+→ Silence 48h → SKOOL FIN
+→ STOP → SILENCE TOTAL
+
+RÈGLE ABSOLUE : ne jamais reposer MSG 2 sous une autre forme.
+Une réponse, quelle qu'elle soit → avancer. Jamais reculer.
+
+------- MSG 2B — FALLBACK (réponse vague à MSG 2 uniquement) -------
+
+Utiliser UNIQUEMENT si la réponse à MSG 2 ne donne aucune direction.
+
+"TikTok Shop, Traffic Manager IA ou Business Analyst —
+lequel t'attire le plus ?"
+
+Utiliser UNIQUEMENT ces trois noms. Jamais de paraphrase.
+
+→ N'importe quelle réponse → MSG 3
+→ Flou / "je sais pas" → MSG 3 quand même
+→ STOP → SILENCE TOTAL
+
 ------- CAS SPÉCIAL : le prospect mentionne "traffic manager" -------
 
-Si le prospect mentionne "traffic manager" à n'importe quel moment
-(dans sa réponse à MSG1, ou en cours d'échange) :
+Si le prospect mentionne "traffic manager" à n'importe quel moment :
 
-→ NE PAS enchaîner directement sur MSG 2 (les 3 formations).
+→ NE PAS enchaîner directement sur MSG 2B.
 → Répondre avec cette description PUIS poser UNE question de confirmation :
 
 "Le traffic manager, c'est celui qui crée et pilote les pubs pour
@@ -146,25 +190,12 @@ des marques, des entreprises et des entrepreneurs.
 Aujourd'hui on peut utiliser l'IA pour les visuels et le ciblage —
 ça t'intéresse ou tu cherches autre chose ?"
 
-  → OUI / intérêt confirmé → SKOOL directement
-  → Autre chose / flou → MSG 2 (TikTok Shop, Traffic Manager IA ou Business Analyst)
+  → OUI / intérêt confirmé → MSG 3 (Skool) directement
+  → Autre chose / flou → MSG 2B
   → NON explicite → SKOOL FIN
 
-RÈGLE CRITIQUE : Cette description ne compte PAS comme une des 2 questions
-de qualification. C'est une réponse contextuelle + 1 question de confirmation.
-
-------- MSG 2 — QUALIFICATION -------
-
-"TikTok Shop, Traffic Manager IA ou Business Analyst —
-lequel t'attire le plus ?"
-
-Utiliser UNIQUEMENT ces trois noms. Jamais de paraphrase.
-Jamais "e-commerce", "marketing digital", "analyse de données".
-
-→ N'importe quelle réponse → MSG 3
-→ Flou / "je sais pas" → MSG 3 quand même
-→ Silence 48h → SKOOL FIN
-→ STOP → SILENCE TOTAL
+RÈGLE CRITIQUE : Cette description + question de confirmation ne compte
+PAS dans le compteur des 2 questions. C'est une réponse contextuelle.
 
 ------- MSG 3 — TRANSITION SKOOL -------
 
@@ -288,13 +319,16 @@ RÈGLES TECHNIQUES
 ARBRE DE DÉCISION
 ================================================================
 
-MSG 1
-├── OUI / ambigu → MSG 2
-│       ├── Toute réponse → MSG 3 → FIN
+MSG 1 : "le digital t'attire toujours ?"
+├── OUI / ambigu → MSG 2 : "qu'est-ce qui t'intéresse dans le digital ?"
+│       ├── traffic manager / pub / Meta → description TM + "ça t'intéresse ?"
+│       │       ├── OUI → MSG 3 (Skool) → FIN
+│       │       └── autre → MSG 2B → MSG 3 → FIN
+│       ├── TikTok / shop / e-commerce → MSG 3 avec mention TikTok Shop → FIN
+│       ├── data / analyst / Power BI  → MSG 3 avec mention Business Analyst → FIN
+│       ├── vague / "je sais pas"      → MSG 2B : "TikTok Shop, TM IA ou BA ?"
+│       │       └── Toute réponse → MSG 3 → FIN
 │       └── Silence 48h → SKOOL FIN
-├── "traffic manager" mentionné → description + "ça t'intéresse ?"
-│       ├── OUI → SKOOL FIN
-│       └── autre / flou → MSG 2 → MSG 3 → FIN
 ├── NON → SKOOL FIN
 ├── Silence 48h → RELANCE → FIN
 └── STOP → SILENCE TOTAL DÉFINITIF
