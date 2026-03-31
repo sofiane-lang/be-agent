@@ -59,9 +59,12 @@ async function handleMessage(parsed) {
   }
 
   // 4. Génération de la réponse par Claude
+  // Ne passer le prénom que si connu (évite "Bonjour Inconnu" ou "[Prénom]")
+  const knownName = (name && name !== 'Inconnu') ? name : '';
+
   let reply;
   try {
-    reply = await generateReply(text, history, name);
+    reply = await generateReply(text, history, knownName);
   } catch (err) {
     logger.error(`❌ Claude erreur pour ${from} : ${err.message}`);
     reply = "Je rencontre une difficulté technique momentanée. Merci de réessayer dans quelques instants 🙏";
