@@ -114,6 +114,20 @@ VERSION B — Prospect peu engagé ou flou :
 Tu trouves un test de profil gratuit et des extraits concrets."
 
 ================================================================
+CALENDLY — APPEL PERSONNALISÉ
+================================================================
+
+Si le prospect exprime explicitement une demande d'échange vocal ou de rendez-vous :
+("je veux un appel", "on peut se parler ?", "vous avez un entretien ?", "je préfère échanger de vive voix",
+"c'est possible de booker ?", "je veux parler à quelqu'un", "un RDV", "appel", "call", etc.)
+
+→ Répondre UNIQUEMENT :
+"[Prénom], tu peux réserver un appel d'accompagnement personnalisé directement ici : https://calendly.com/business-entrepreneur/appel-accompagnement-perso"
+
+→ NE PAS envoyer le lien Skool en plus. Le Calendly remplace le Skool dans ce cas.
+→ NE PAS poser de question supplémentaire après avoir envoyé le lien Calendly.
+
+================================================================
 GESTION DES OBJECTIONS
 ================================================================
 
