@@ -59,12 +59,13 @@ async function transcribeAudio(audioBuffer, mimeType = 'audio/ogg') {
  * WhatsApp envoie généralement de l'ogg/opus pour les vocaux.
  */
 function resolveExtension(mimeType) {
-  if (mimeType.includes('ogg'))             return 'ogg';
-  if (mimeType.includes('mp4') || mimeType.includes('m4a')) return 'm4a';
-  if (mimeType.includes('mpeg') || mimeType.includes('mp3')) return 'mp3';
-  if (mimeType.includes('webm'))            return 'webm';
-  if (mimeType.includes('amr'))             return 'amr';
-  return 'ogg'; // fallback
+  const m = (mimeType || '').toLowerCase();
+  if (m.includes('ogg'))                      return 'ogg';
+  if (m.includes('mp4') || m.includes('m4a')) return 'm4a';
+  if (m.includes('mpeg') || m.includes('mp3')) return 'mp3';
+  if (m.includes('webm'))                     return 'webm';
+  if (m.includes('amr'))                      return 'amr';
+  return 'ogg'; // fallback WhatsApp vocal = ogg/opus
 }
 
 module.exports = { transcribeAudio };

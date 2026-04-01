@@ -93,6 +93,14 @@ app.get('/health', (_req, res) => {
     uptime:  Math.floor(process.uptime()),
     env:     process.env.NODE_ENV || 'development',
     ts:      new Date().toISOString(),
+    // Présence des variables clés (true/false — jamais les valeurs)
+    keys: {
+      ANTHROPIC:  !!process.env.ANTHROPIC_API_KEY,
+      WHATSAPP:   !!process.env.WHATSAPP_TOKEN,
+      GROQ:       !!process.env.GROQ_API_KEY,
+      SHEETS:     !!process.env.GOOGLE_SHEET_ID,
+      TELEGRAM:   !!process.env.TELEGRAM_BOT_TOKEN,
+    },
   });
 });
 

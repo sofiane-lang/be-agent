@@ -14,13 +14,11 @@ const { getConversationHistory, appendConversation } = require('./sheets');
 const { transcribeAudio }             = require('./transcription');
 const logger = require('./logger');
 
-/**
- * Message envoyé quand le type reçu n'est pas un texte.
- * Personnalisable librement.
- */
-const UNSUPPORTED_TYPE_MSG =
-  "Je suis désolé, je ne peux traiter que les messages texte pour l'instant. " +
-  'Merci de m\'envoyer votre demande par écrit 🙏';
+// Message pour types non supportés (image, document, sticker...)
+const UNSUPPORTED_TYPE_MSG = "Je n'ai pas pu lire ça. Tu peux me l'envoyer par écrit ?";
+
+// Message si la transcription d'un vocal échoue
+const AUDIO_ERROR_MSG = "Je n'ai pas bien capté ton message. Tu peux me redire ça par écrit ?";
 
 /**
  * Traite un message entrant de bout en bout.
@@ -38,37 +36,32 @@ async function handleMessage(parsed) {
   await markAsRead(messageId);
 
   // 2. Gestion des types non-texte
-  if (type === 'audio' && parsed.mediaId) {
+  if (type === 'audio') {
+    if (!parsed.mediaId) {
+      // Vocal reçu mais sans mediaId — log + message neutre
+      logger.warn(`⚠️  Audio sans mediaId pour ${from} — payload incomplet`);
+      await sendTextMessage(from, AUDIO_ERROR_MSG);
+      await appendConversation({ phone: from, name, incoming: '[audio-sans-id]', reply: AUDIO_ERROR_MSG, status: 'audio_sans_id' });
+      return;
+    }
     // Message vocal → transcription Groq Whisper
     try {
-      logger.info(`🎙️  Vocal reçu de ${from} — transcription en cours…`);
+      logger.info(`🎙️  Vocal reçu de ${from} (mediaId: ${parsed.mediaId}) — transcription en cours…`);
       const mediaUrl    = await getMediaUrl(parsed.mediaId);
       const audioBuffer = await downloadMedia(mediaUrl);
-      text              = await transcribeAudio(audioBuffer, parsed.mimeType);
+      text              = await transcribeAudio(audioBuffer, parsed.mimeType || 'audio/ogg');
       logger.info(`🎙️  Transcrit (${from}) : "${text.substring(0, 100)}"`);
     } catch (err) {
-      logger.error(`❌ Transcription audio échouée pour ${from} : ${err.message}`);
-      await sendTextMessage(from, UNSUPPORTED_TYPE_MSG);
-      await appendConversation({
-        phone:    from,
-        name,
-        incoming: '[audio]',
-        reply:    UNSUPPORTED_TYPE_MSG,
-        status:   'transcription_échouée',
-      });
+      logger.error(`❌ Transcription audio échouée pour ${from} : ${err.message} | stack: ${err.stack}`);
+      await sendTextMessage(from, AUDIO_ERROR_MSG);
+      await appendConversation({ phone: from, name, incoming: '[audio]', reply: AUDIO_ERROR_MSG, status: 'transcription_échouée' });
       return;
     }
   } else if (type !== 'text' || !text) {
     // Image, document ou autre type non supporté
-    logger.info(`↩️  Type non supporté "${type}" → réponse automatique`);
+    logger.info(`↩️  Type non supporté "${type}" pour ${from}`);
     await sendTextMessage(from, UNSUPPORTED_TYPE_MSG);
-    await appendConversation({
-      phone:    from,
-      name,
-      incoming: `[${type}]`,
-      reply:    UNSUPPORTED_TYPE_MSG,
-      status:   'type_non_supporté',
-    });
+    await appendConversation({ phone: from, name, incoming: `[${type}]`, reply: UNSUPPORTED_TYPE_MSG, status: 'type_non_supporté' });
     return;
   }
 
