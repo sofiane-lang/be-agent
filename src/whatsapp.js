@@ -109,6 +109,8 @@ function parseIncomingMessage(body) {
       name:      contact?.profile?.name || 'Inconnu',
       type:      msg.type,                          // text | audio | image | document | ...
       text:      msg.type === 'text' ? msg.text?.body : null,
+      mediaId:   msg[msg.type]?.id   || null,       // ID média pour audio/image/document
+      mimeType:  msg[msg.type]?.mime_type || null,  // type MIME du média
       timestamp: parseInt(msg.timestamp, 10),
     };
   } catch (err) {
@@ -117,4 +119,46 @@ function parseIncomingMessage(body) {
   }
 }
 
-module.exports = { sendTextMessage, markAsRead, parseIncomingMessage };
+/**
+ * Récupère l'URL de téléchargement d'un média WhatsApp à partir de son ID.
+ *
+ * @param {string} mediaId - ID du média (fourni dans le payload webhook)
+ * @returns {Promise<string>} - URL temporaire de téléchargement (valable ~5 min)
+ */
+async function getMediaUrl(mediaId) {
+  const version = process.env.META_API_VERSION || 'v19.0';
+  const url     = `https://graph.facebook.com/${version}/${mediaId}`;
+
+  try {
+    const { data } = await axios.get(url, { headers: getHeaders() });
+    logger.debug(`📎 WhatsApp getMediaUrl : ${mediaId} → ${data.url}`);
+    return data.url;
+  } catch (err) {
+    const detail = err.response?.data?.error?.message || err.message;
+    logger.error(`❌ WhatsApp getMediaUrl échoué (${mediaId}) : ${detail}`);
+    throw err;
+  }
+}
+
+/**
+ * Télécharge le contenu binaire d'un média WhatsApp depuis son URL.
+ *
+ * @param {string} mediaUrl - URL récupérée via getMediaUrl()
+ * @returns {Promise<Buffer>} - Contenu binaire du fichier
+ */
+async function downloadMedia(mediaUrl) {
+  try {
+    const { data } = await axios.get(mediaUrl, {
+      headers:      getHeaders(),
+      responseType: 'arraybuffer',
+    });
+    logger.debug(`📎 WhatsApp downloadMedia : ${data.byteLength} octets téléchargés`);
+    return Buffer.from(data);
+  } catch (err) {
+    const detail = err.response?.data?.error?.message || err.message;
+    logger.error(`❌ WhatsApp downloadMedia échoué : ${detail}`);
+    throw err;
+  }
+}
+
+module.exports = { sendTextMessage, markAsRead, parseIncomingMessage, getMediaUrl, downloadMedia };
