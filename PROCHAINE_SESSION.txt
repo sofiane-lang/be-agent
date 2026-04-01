@@ -7,6 +7,7 @@ Projet : be-agent
 Repo   : https://github.com/sofiane-lang/be-agent
 Dossier local : C:\Users\Admin\Desktop\be-agent
 Hébergement : Railway (déploiement auto sur push main)
+URL Railway : be-agent-production-ba6b.up.railway.app
 Fichier mémoire projet : CLAUDE.md (à la racine — lire en premier)
 
 ================================================================
@@ -14,146 +15,117 @@ Fichier mémoire projet : CLAUDE.md (à la racine — lire en premier)
 ================================================================
 
 ✅ Bot WhatsApp opérationnel sur Railway
-✅ Prompt v10.4 actif dans src/claude.js
+✅ Prompt v10.6 actif dans src/claude.js
 ✅ Google Sheets comme mémoire de conversation
 ✅ Rapport quotidien cron à 8h sur WhatsApp admin
-✅ Gestion des types non-texte (audio, image → message d'erreur)
+✅ Gestion des types non-texte (audio → message neutre)
 ✅ STOP → silence total
 ✅ Calendly intégré pour demandes d'appel
 ✅ Détection profil psychologique (5 profils)
 ✅ Anti-boucle 1 mot (3 msgs sans avancement → Skool)
+✅ Alertes Telegram (crash, erreurs Anthropic x5, erreurs réseau WhatsApp)
+✅ Notification Telegram au démarrage du serveur
+✅ /health affiche le statut de toutes les variables clés
 
 ================================================================
-CHANTIER 1 — TRANSCRIPTION AUDIO (PRIORITÉ)
+CHANTIER 1 — TRANSCRIPTION AUDIO (CODE OK, VARIABLE EN ATTENTE)
 ================================================================
 
-OBJECTIF :
-Quand un prospect envoie un message vocal WhatsApp,
-le bot doit le transcrire via Groq Whisper puis traiter
-le texte comme un message normal.
+ÉTAT : Code déployé ✅ | GROQ_API_KEY enregistrée dans Railway ✅
+PROBLÈME : Railway a des builds qui échouent en 1 seconde
+           (erreur infrastructure, pas code)
+           Le serveur tourne sur l'ancienne image sans GROQ_API_KEY
 
-CONTEXTE TECHNIQUE :
-- Actuellement dans messageHandler.js : les messages non-texte
-  reçoivent un message d'erreur générique ("je ne traite que le texte")
-- WhatsApp envoie les audios avec type: "audio" et un media_id
-- Il faut : 1) télécharger le fichier audio via l'API Meta
-            2) envoyer à Groq Whisper pour transcription
-            3) traiter le texte transcrit comme un message normal
+VÉRIFIER EN DÉBUT DE SESSION :
+→ GET https://be-agent-production-ba6b.up.railway.app/health
+→ Si "GROQ": true → transcription opérationnelle, chantier terminé
+→ Si "GROQ": false → Railway n'a pas encore redéployé avec succès
+   Solution : aller sur Railway → be-agent → Deployments
+              → cliquer "⋮" sur le déploiement ACTIVE → Redeploy
 
-API GROQ :
-- Site : https://console.groq.com
-- Modèle Whisper : whisper-large-v3 (le meilleur) ou whisper-large-v3-turbo
-- Gratuit avec limites généreuses
-- SDK : npm install groq-sdk
-- Doc : https://console.groq.com/docs/speech-text
+FICHIERS CONCERNÉS :
+- src/transcription.js  → télécharge audio Meta + transcrit via Groq Whisper
+- src/whatsapp.js       → getMediaUrl() + downloadMedia() + mediaId dans parse
+- src/messageHandler.js → si type=audio → transcription → flux normal
 
-ÉTAPES D'IMPLÉMENTATION :
-1. Créer un compte Groq sur console.groq.com → récupérer la clé API
-2. Ajouter GROQ_API_KEY dans .env et dans Railway
-3. Créer src/transcription.js :
-   - downloadAudioFromMeta(mediaId) → télécharge le fichier audio
-   - transcribeWithGroq(audioBuffer) → retourne le texte
-4. Modifier src/messageHandler.js :
-   - Si type === 'audio' → transcribeWithGroq() → traiter comme texte
-   - Loguer "[vocal transcrit]" dans Google Sheets
-5. Modifier src/whatsapp.js :
-   - Ajouter getMediaUrl(mediaId) pour récupérer l'URL de téléchargement
-   - Ajouter downloadMedia(mediaUrl) pour télécharger le fichier
-
-VARIABLE À AJOUTER dans .env :
-GROQ_API_KEY=           ← clé récupérée sur console.groq.com
+VARIABLE GROQ :
+GROQ_API_KEY → déjà enregistrée dans Railway variables
+(pas encore chargée par le serveur actif — voir solution ci-dessus)
 
 ================================================================
-CHANTIER 2 — PASSAGE TEST → PRODUCTION META
+CHANTIER 2 — ALERTES TELEGRAM (CODE OK, VARIABLES MANQUANTES)
 ================================================================
 
-OBJECTIF :
-Passer le numéro WhatsApp Business du mode test au mode production
-pour pouvoir contacter n'importe quel numéro (pas seulement ceux
-ajoutés manuellement dans Meta Developers).
+ÉTAT : Code déployé ✅ | Variables Telegram pas encore ajoutées dans Railway
 
-CE QUI CHANGE :
-- En test : seuls les numéros whitelistés dans Meta Developers reçoivent
-- En prod : tous les numéros peuvent recevoir des messages
-- Il faut soumettre l'application Meta pour review
+À FAIRE :
+1. Créer le bot Telegram via @BotFather → /newbot → récupérer token
+2. Envoyer un message au bot → https://api.telegram.org/bot[TOKEN]/getUpdates → récupérer chat_id
+3. Ajouter dans Railway :
+   TELEGRAM_BOT_TOKEN=xxxx:xxxxxxxxxxxxxxxxx
+   TELEGRAM_CHAT_ID=xxxxxxxxx
+
+VÉRIFIER : GET /health → "TELEGRAM": true
+
+================================================================
+CHANTIER 3 — CHATWOOT (À FAIRE)
+================================================================
+
+OBJECTIF : Interface CRM pour lire et gérer toutes les conversations.
+           Pause/reprise automatique quand un humain prend la main.
 
 ÉTAPES :
-1. Meta Developers → App → WhatsApp → Configuration
-2. Ajouter un numéro de téléphone réel vérifié (si pas encore fait)
-3. Compléter les infos de l'app (politique de confidentialité, icône, etc.)
-4. Soumettre pour review Meta (délai : 1-7 jours en général)
-5. Une fois approuvé : déplacer le webhook vers le domaine Railway prod
-6. Vérifier que VERIFY_TOKEN correspond entre Meta et Railway
+1. Déployer Chatwoot sur Railway (instance séparée)
+   → Image Docker officielle : chatwoot/chatwoot
+   → Base de données PostgreSQL Railway
+2. Créer 2 boîtes de réception dans Chatwoot :
+   - "Agent Qualification" → leads froids
+   - "Agent Nurturing" → membres Skool
+3. Créer src/chatwoot.js → API Chatwoot (créer/mettre à jour conversations)
+4. Modifier messageHandler.js → envoyer chaque échange à Chatwoot
+5. Logique pause/reprise :
+   - Conversation assignée dans Chatwoot → bot se tait
+   - Conversation remise en "non assignée" → bot reprend
+   - Stocker les numéros en pause dans une liste mémoire
+6. Webhook Chatwoot → POST /chatwoot-webhook dans server.js
+   → Écouter les événements d'assignation/désassignation
 
-POINTS DE VIGILANCE :
-- Le message template "Bonjour, je suis Angélique..." doit être
-  soumis et approuvé par Meta séparément (Business-Initiated messages)
-- Les messages réactifs (réponse à un message reçu) n'ont pas besoin
-  d'approbation — ils fonctionnent en prod dès l'app approuvée
-- URL Railway actuelle à confirmer pour le webhook prod
-
-================================================================
-CHANTIER 3 — FICHIER DE LEADS
-================================================================
-
-OBJECTIF :
-Permettre d'envoyer automatiquement le MSG 1 (premier contact)
-à une liste de prospects depuis un fichier de leads,
-sans avoir à envoyer manuellement chaque message.
-
-FORMAT ATTENDU DU FICHIER :
-CSV ou Google Sheet avec colonnes :
-| Prénom | Numéro (format international sans +) | Statut |
-
-FONCTIONNEMENT ATTENDU :
-1. Script ou endpoint qui lit la liste
-2. Pour chaque lead avec statut "à contacter" :
-   - Envoie le MSG 1 personnalisé avec le prénom
-   - Marque le statut "envoyé" dans le fichier
-   - Délai entre chaque envoi (éviter le spam Meta)
-3. Les réponses sont traitées normalement par le webhook existant
-
-FICHIERS À CRÉER OU MODIFIER :
-- src/leads.js → nouveau fichier : lecture fichier leads + envoi MSG 1
-- Ou une nouvelle route dans server.js : POST /launch-campaign
-- Ou un script standalone : scripts/sendLeads.js
-
-QUESTION EN SUSPENS :
-Format du fichier leads → CSV local, Google Sheet ou autre ?
-À clarifier au début de la session.
+VARIABLES À AJOUTER :
+CHATWOOT_URL=
+CHATWOOT_API_TOKEN=
+CHATWOOT_INBOX_ID_QUALIFICATION=
+CHATWOOT_INBOX_ID_NURTURING=
 
 ================================================================
-CHANTIER 4 — TESTS DE PROMPT (en cours)
+CHANTIER 4 — STATUT SKOOL + ROUTING (À FAIRE)
 ================================================================
 
-Prompt actuel : v10.4 dans src/claude.js
-Dernières corrections appliquées :
-- Questions concrètes et actionnables (pas abstraites)
-- Variation des réformulations obligatoire (10 options)
-- Détection profil psychologique (5 profils)
-- Anti-boucle 1 mot (max 3 msgs → Skool)
-- Prénom : 1 fois max dans la conversation
-- Plus jamais "formation" → toujours "approche"
+OBJECTIF : Distinguer 2 modes de conversation :
+- statut_skool = NON → mode qualification (séquence actuelle)
+- statut_skool = OUI → mode nurturing (membres déjà sur Skool)
 
-Points encore à valider par les tests :
-- Vérifier que la détection de profil fonctionne bien en conditions réelles
-- Vérifier que le bot ne boucle plus sur les réponses courtes
-- Vérifier la transition Skool (naturelle, pas forcée)
-- Vérifier le cas "Yo" / "Salut" → pas de restart séquence
+TRAVAIL À FAIRE :
+1. Ajouter colonne "statut_skool" dans Google Sheet
+2. Modifier sheets.js → lire/écrire le statut_skool par numéro
+3. Modifier messageHandler.js → passer le statut à Claude
+4. Modifier src/claude.js → ajouter section NURTURING au prompt
+   (ton différent, objectifs différents pour membres Skool)
 
 ================================================================
-FICHIERS CLÉS À CONNAÎTRE
+CHANTIER 5 — FICHIER DE LEADS (À FAIRE)
 ================================================================
 
-src/claude.js          → PROMPT SYSTÈME (v10.4) + appel Anthropic
-src/messageHandler.js  → orchestration : Sheets → Claude → WhatsApp
-src/whatsapp.js        → client Meta API
-src/sheets.js          → Google Sheets (historique + stats)
-src/cron.js            → rapport quotidien
-server.js              → point d'entrée Express + routes webhook
+OBJECTIF : Envoyer automatiquement le MSG 1 à une liste de prospects.
+
+FICHIERS À CRÉER :
+- src/leads.js → lecture CSV/Sheets + envoi MSG 1 + délai entre envois
+- Ou nouvelle route POST /launch-campaign dans server.js
+
+FORMAT LEADS : CSV ou Google Sheet
+| Prénom | Numéro (international sans +) | Statut |
 
 ================================================================
-VARIABLES D'ENVIRONNEMENT (toutes dans Railway)
+VARIABLES D'ENVIRONNEMENT — ÉTAT COMPLET
 ================================================================
 
 ANTHROPIC_API_KEY       ✅ en place
@@ -166,16 +138,23 @@ GOOGLE_SERVICE_ACCOUNT_JSON ✅ en place
 ADMIN_WHATSAPP_NUMBER   ✅ en place
 CRON_DAILY_REPORT       ✅ en place
 CLAUDE_MODEL            ✅ en place
-GROQ_API_KEY            ❌ À AJOUTER (transcription audio)
+GROQ_API_KEY            ✅ dans Railway, ❌ pas encore chargée (voir Chantier 1)
+TELEGRAM_BOT_TOKEN      ❌ À AJOUTER
+TELEGRAM_CHAT_ID        ❌ À AJOUTER
+CHATWOOT_URL            ❌ À AJOUTER (Chantier 3)
+CHATWOOT_API_TOKEN      ❌ À AJOUTER (Chantier 3)
+CHATWOOT_INBOX_ID_QUALIFICATION ❌ À AJOUTER (Chantier 3)
+CHATWOOT_INBOX_ID_NURTURING     ❌ À AJOUTER (Chantier 3)
 
 ================================================================
 ORDRE DE PRIORITÉ RECOMMANDÉ
 ================================================================
 
-1. Transcription audio Groq Whisper (impact immédiat sur UX)
-2. Tests de prompt (affinage continu)
-3. Passage prod Meta (nécessaire pour déploiement réel)
-4. Fichier de leads (automatisation prospection)
+1. Vérifier GROQ actif (health check → si false, Redeploy Railway)
+2. Ajouter variables Telegram → tester alerte
+3. Chatwoot + pause/reprise
+4. Statut Skool + routing
+5. Fichier de leads
 
 ================================================================
 COMMANDE DE DÉMARRAGE SESSION
