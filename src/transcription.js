@@ -12,10 +12,16 @@ const os     = require('os');
 const Groq   = require('groq-sdk');
 const logger = require('./logger');
 
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
-
 // Modèle Whisper (turbo = plus rapide, même qualité pour le français courant)
 const WHISPER_MODEL = 'whisper-large-v3-turbo';
+
+// Client instancié à la demande (lazy) pour ne pas crasher au démarrage
+// si GROQ_API_KEY n'est pas encore chargée
+let _groq = null;
+function getGroq() {
+  if (!_groq) _groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+  return _groq;
+}
 
 /**
  * Transcrit un buffer audio en texte via Groq Whisper.
@@ -32,7 +38,7 @@ async function transcribeAudio(audioBuffer, mimeType = 'audio/ogg') {
   try {
     fs.writeFileSync(tmpFile, audioBuffer);
 
-    const transcription = await groq.audio.transcriptions.create({
+    const transcription = await getGroq().audio.transcriptions.create({
       file:     fs.createReadStream(tmpFile),
       model:    WHISPER_MODEL,
       language: 'fr',
