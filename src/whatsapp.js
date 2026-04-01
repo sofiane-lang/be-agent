@@ -8,8 +8,21 @@
  *  - parseIncomingMessage(body)  : extrait les données utiles du webhook
  */
 
-const axios = require('axios');
+const axios  = require('axios');
 const logger = require('./logger');
+const { sendAlert } = require('./telegram');
+
+// Détecte une erreur réseau (pas une erreur HTTP 4xx/5xx de l'API)
+function isNetworkError(err) {
+  return !err.response && (
+    err.code === 'ECONNREFUSED' ||
+    err.code === 'ETIMEDOUT'    ||
+    err.code === 'ENOTFOUND'    ||
+    err.code === 'ECONNRESET'   ||
+    err.message.includes('Network Error') ||
+    err.message.includes('timeout')
+  );
+}
 
 // URL de base construite depuis les variables d'environnement
 function getApiUrl() {
@@ -50,9 +63,11 @@ async function sendTextMessage(to, text) {
     logger.info(`📤 WhatsApp : message envoyé → ${to} (id: ${data.messages?.[0]?.id})`);
     return data;
   } catch (err) {
-    // Log détaillé de l'erreur Meta
     const detail = err.response?.data?.error?.message || err.message;
     logger.error(`❌ WhatsApp sendTextMessage échoué → ${to} : ${detail}`);
+    if (isNetworkError(err)) {
+      sendAlert('WhatsApp', 'Erreur de connexion Meta API', detail);
+    }
     throw err;
   }
 }

@@ -7,10 +7,15 @@
  */
 
 const Anthropic = require('@anthropic-ai/sdk');
-const logger = require('./logger');
+const logger    = require('./logger');
+const { sendAlert } = require('./telegram');
 
 // Instanciation unique du client (lit ANTHROPIC_API_KEY depuis l'env)
 const anthropic = new Anthropic();
+
+// Compteur d'erreurs consécutives — alerte Telegram à 5
+let _anthropicErrorCount = 0;
+const ANTHROPIC_ERROR_THRESHOLD = 5;
 
 /**
  * Prompt système : personnalise ici le rôle et le ton de l'agent.
@@ -587,18 +592,32 @@ async function generateReply(userMessage, history = [], contactName = '') {
 
   logger.debug(`🤖 Claude : envoi requête (${messages.length} messages, user: "${userMessage.slice(0, 50)}...")`);
 
-  const response = await anthropic.messages.create({
-    model:      process.env.CLAUDE_MODEL      || 'claude-opus-4-5',
-    max_tokens: parseInt(process.env.CLAUDE_MAX_TOKENS || '1024', 10),
-    system:     systemPrompt,
-    messages,
-  });
+  let response;
+  try {
+    response = await anthropic.messages.create({
+      model:      process.env.CLAUDE_MODEL      || 'claude-opus-4-5',
+      max_tokens: parseInt(process.env.CLAUDE_MAX_TOKENS || '1024', 10),
+      system:     systemPrompt,
+      messages,
+    });
+  } catch (err) {
+    _anthropicErrorCount++;
+    logger.error(`❌ Claude API erreur (${_anthropicErrorCount}/${ANTHROPIC_ERROR_THRESHOLD}) : ${err.message}`);
+    if (_anthropicErrorCount >= ANTHROPIC_ERROR_THRESHOLD) {
+      sendAlert('Anthropic', `${ANTHROPIC_ERROR_THRESHOLD} erreurs consécutives`, err.message);
+      _anthropicErrorCount = 0; // reset pour éviter le spam
+    }
+    throw err;
+  }
 
   const reply = response.content
     .filter((block) => block.type === 'text')
     .map((block) => block.text)
     .join('\n')
     .trim();
+
+  // Succès → reset compteur d'erreurs
+  _anthropicErrorCount = 0;
 
   logger.debug(`🤖 Claude : réponse reçue (${reply.length} caractères)`);
   return reply;

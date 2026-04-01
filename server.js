@@ -16,7 +16,24 @@ const { parseIncomingMessage } = require('./src/whatsapp');
 const { handleMessage }        = require('./src/messageHandler');
 const { initSheets }           = require('./src/sheets');
 const { startCronJobs }        = require('./src/cron');
+const { sendAlert, sendInfo }  = require('./src/telegram');
 const logger                   = require('./src/logger');
+
+// ─────────────────────────────────────────────
+//  Handlers globaux — erreurs non capturées
+// ─────────────────────────────────────────────
+process.on('uncaughtException', (err) => {
+  logger.error(`💥 uncaughtException : ${err.message}`, { stack: err.stack });
+  sendAlert('be-agent', 'Crash — uncaughtException', err.message).finally(() => {
+    process.exit(1);
+  });
+});
+
+process.on('unhandledRejection', (reason) => {
+  const detail = reason instanceof Error ? reason.message : String(reason);
+  logger.error(`💥 unhandledRejection : ${detail}`);
+  sendAlert('be-agent', 'Crash — unhandledRejection', detail);
+});
 
 const app  = express();
 const PORT = process.env.PORT || 8080;
@@ -94,10 +111,14 @@ async function bootstrap() {
       logger.info(`🚀 Serveur démarré sur le port ${PORT}`);
       logger.info(`   • Webhook : POST/GET http://localhost:${PORT}/webhook`);
       logger.info(`   • Santé   : GET      http://localhost:${PORT}/health`);
+      // Notification Telegram — visible à chaque redémarrage Railway
+      sendInfo('be-agent', 'Serveur démarré ✓');
     });
   } catch (err) {
     logger.error(`💥 Échec du démarrage : ${err.message}`);
-    process.exit(1);
+    sendAlert('be-agent', 'Échec du démarrage', err.message).finally(() => {
+      process.exit(1);
+    });
   }
 }
 
