@@ -18,7 +18,7 @@ const logger = require('./logger');
 const UNSUPPORTED_TYPE_MSG = "Je n'ai pas pu lire ça. Tu peux me l'envoyer par écrit ?";
 
 // Message si la transcription d'un vocal échoue
-const AUDIO_ERROR_MSG = "Je n'ai pas bien capté ton message. Tu peux me redire ça par écrit ?";
+const AUDIO_ERROR_MSG = "Je n'ai pas bien entendu ton message. Tu peux me redire ça par écrit ?";
 
 /**
  * Traite un message entrant de bout en bout.
